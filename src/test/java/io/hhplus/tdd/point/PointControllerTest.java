@@ -1,7 +1,10 @@
 package io.hhplus.tdd.point;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -10,7 +13,7 @@ class PointControllerTest {
     private PointController controller = new PointController();
 
     UserPoint display_user_point(Long id) throws Exception {
-        // UserPoint 객체를 생성
+        // UserPoint 객체를 반환
         return controller.point(id);
     }
 
@@ -28,9 +31,9 @@ class PointControllerTest {
         // 이미 존재하는 사용자 id 에 대해선 UserPoint 가 새로 생성되지 않고 UserPointTable 에 저장된 Data 가 조회되어야 한다.
         Long userId = 1L;
         UserPoint point = display_user_point(userId);
-//        assertEquals(point.id(), userId); // 사용자를_생성하여_포인트_조회() 의 test 를 포함할 수 있는 내용이 중복되어도 괜찮은가?
+//        assertEquals(point.id(), userId); // 다른 test 를 포함할 수 있는 내용이 중복되어도 괜찮은가?
 
-        Long saveTime = point.updateMillis();
+        Long saveTime = point.updateMillis(); // 동시 생성에 대해서는 어떻게 처리?
         assertEquals(saveTime, controller.point(userId).updateMillis());
     }
 
@@ -61,5 +64,38 @@ class PointControllerTest {
 
         Long cost = 10000L;
         assertEquals(controller.use(userId, cost).point(), userPoint);
+    }
+
+    @Test
+    void 포인트_충전_내역_조회() throws Exception {
+        // history 성공 케이스 1
+        Long userId = 1L;
+        display_user_point(userId);
+        controller.charge(userId, 5000L);
+
+        List<PointHistory> histories = controller.history(userId);
+        if (histories.size() > 0) {
+            assertEquals(histories.get(0).type(), TransactionType.CHARGE);
+        }
+        else{
+            Assertions.fail();
+        }
+    }
+
+    @Test
+    void 포인트_사용_내역_조회() throws Exception {
+        // history 성공 케이스 2
+        Long userId = 1L;
+        display_user_point(userId);
+        controller.charge(userId,5000L);
+        controller.use(userId, 1000L);
+
+        List<PointHistory> histories = controller.history(userId);
+        if (histories.size() > 0) {
+            assertEquals(histories.get(histories.size()-1).type(), TransactionType.USE);
+        }
+        else{
+            Assertions.fail();
+        }
     }
 }
