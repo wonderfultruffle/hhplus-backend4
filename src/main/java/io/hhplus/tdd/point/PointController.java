@@ -34,9 +34,22 @@ public class PointController {
      * TODO - 특정 유저의 포인트를 충전하는 기능을 작성해주세요.
      */
     @PatchMapping("{id}/charge")
-    public UserPoint charge(@PathVariable Long id, @RequestBody Long amount) {
+    public UserPoint charge(@PathVariable Long id, @RequestBody Long amount) throws InterruptedException {
+        UserPoint point;
 
-        return new UserPoint(0L, 0L, 0L);
+        if (amount < 1000L) {
+            System.out.println("Warning: The charge amount must be greater than or equal to 1000.");
+            point = this.pointTable.selectById(id);
+        } else if (amount > 99999999L) {
+            System.out.println("Warning: The charge amount must be less than or equal to 99999999.");
+            point = this.pointTable.selectById(id);
+        } else{
+            point = this.pointTable.insertOrUpdate(id, amount);
+        }
+        System.out.println("[Result]");
+        System.out.println("User ID: "+ point.id());
+        System.out.println("Point: "+ point.point());
+        return point;
     }
 
     /**
