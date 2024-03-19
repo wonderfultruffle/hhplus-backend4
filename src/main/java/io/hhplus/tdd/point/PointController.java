@@ -37,13 +37,13 @@ public class PointController {
     public UserPoint charge(@PathVariable Long id, @RequestBody Long amount) throws InterruptedException {
         UserPoint point;
 
-        if (amount < 1000L) {
+        if (amount < 1000L) {   // 충전 가능 최소 금액 미달
             System.out.println("Warning: The charge amount must be greater than or equal to 1000.");
             point = this.pointTable.selectById(id);
-        } else if (amount > 99999999L) {
+        } else if (amount > 99999999L) { // 충전 가능 최대 금액 초과
             System.out.println("Warning: The charge amount must be less than or equal to 99999999.");
             point = this.pointTable.selectById(id);
-        } else{
+        } else{                 // 충전 가능 금액
             point = this.pointTable.insertOrUpdate(id, amount);
         }
         System.out.println("[Result]");
@@ -56,7 +56,18 @@ public class PointController {
      * TODO - 특정 유저의 포인트를 사용하는 기능을 작성해주세요.
      */
     @PatchMapping("{id}/use")
-    public UserPoint use(@PathVariable Long id, @RequestBody Long amount) {
-        return new UserPoint(0L, 0L, 0L);
+    public UserPoint use(@PathVariable Long id, @RequestBody Long amount) throws InterruptedException {
+        UserPoint point = pointTable.selectById(id);
+
+        if (point.point() >= amount) {
+            point = pointTable.insertOrUpdate(id, point.point() - amount);
+        }
+        else {
+            System.out.println("Warning: Insufficient points. Payment canceled.");
+        }
+        System.out.println("[Result]");
+        System.out.println("User ID: "+ point.id());
+        System.out.println("Point: "+ point.point());
+        return point;
     }
 }
