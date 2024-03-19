@@ -1,5 +1,6 @@
 package io.hhplus.tdd.point;
 
+import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -15,8 +16,10 @@ public class PointController {
      * TODO - 특정 유저의 포인트를 조회하는 기능을 작성해주세요.
      */
     UserPointTable pointTable = new UserPointTable();
+    PointHistoryTable historyTable = new PointHistoryTable();
 
     @GetMapping("{id}")
+    @ResponseBody
     public UserPoint point(@PathVariable Long id) throws InterruptedException {
         return pointTable.selectById(id);
     }
@@ -25,15 +28,15 @@ public class PointController {
      * TODO - 특정 유저의 포인트 충전/이용 내역을 조회하는 기능을 작성해주세요.
      */
     @GetMapping("{id}/histories")
+    @ResponseBody
     public List<PointHistory> history(@PathVariable Long id) {
-
-        return Collections.emptyList();
+        return historyTable.selectAllByUserId(id);
     }
 
     /**
      * TODO - 특정 유저의 포인트를 충전하는 기능을 작성해주세요.
      */
-    @PatchMapping("{id}/charge")
+    @PatchMapping("{id}/charge/")
     public UserPoint charge(@PathVariable Long id, @RequestBody Long amount) throws InterruptedException {
         UserPoint point;
 
@@ -45,25 +48,28 @@ public class PointController {
             point = this.pointTable.selectById(id);
         } else{                 // 충전 가능 금액
             point = this.pointTable.insertOrUpdate(id, amount);
+            historyTable.insert(id, amount, TransactionType.CHARGE, System.currentTimeMillis());
         }
         System.out.println("[Result]");
         System.out.println("User ID: "+ point.id());
         System.out.println("Point: "+ point.point());
+
         return point;
     }
 
     /**
      * TODO - 특정 유저의 포인트를 사용하는 기능을 작성해주세요.
      */
-    @PatchMapping("{id}/use")
-    public UserPoint use(@PathVariable Long id, @RequestBody Long amount) throws InterruptedException {
+    @PatchMapping("{id}/use/")
+    public UserPoint use(@PathVariable Long id, @RequestBody Long cost) throws InterruptedException {
         UserPoint point = pointTable.selectById(id);
 
-        if (point.point() >= amount) {
-            point = pointTable.insertOrUpdate(id, point.point() - amount);
+        if (point.point() < cost) {
+            System.out.println("Warning: Insufficient points. Payment canceled.");
         }
         else {
-            System.out.println("Warning: Insufficient points. Payment canceled.");
+            point = pointTable.insertOrUpdate(id, point.point() - cost);
+            historyTable.insert(id, cost, TransactionType.USE, System.currentTimeMillis());
         }
         System.out.println("[Result]");
         System.out.println("User ID: "+ point.id());
