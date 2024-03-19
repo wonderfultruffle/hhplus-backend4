@@ -14,11 +14,11 @@ public class PointController {
     /**
      * TODO - 특정 유저의 포인트를 조회하는 기능을 작성해주세요.
      */
-    UserPointTable point_tbl = new UserPointTable();
-    @GetMapping("{id}")
-    public UserPoint point(@PathVariable Long id) {
+    UserPointTable pointTable = new UserPointTable();
 
-        return new UserPoint(0L, 0L, 0L);
+    @GetMapping("{id}")
+    public UserPoint point(@PathVariable Long id) throws InterruptedException {
+        return pointTable.selectById(id);
     }
 
     /**
